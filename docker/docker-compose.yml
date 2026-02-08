@@ -1,6 +1,6 @@
 services:
   openclaw-gateway:
-    image: ghcr.io/andreesg/ag-openclaw_config/openclaw-gateway:latest
+    image: ghcr.io/andreesg/openclaw-docker-config/openclaw-gateway:latest
     env_file: .env
     restart: unless-stopped
     environment:

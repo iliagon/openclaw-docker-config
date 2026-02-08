@@ -27,7 +27,7 @@ Version-controlled OpenClaw configuration deployed to a Hetzner VPS via Docker.
 
 - Docker and Docker Compose on the VPS
 - SSH access to the VPS (`ssh openclaw@VPS_IP`)
-- The infra repo (`ag-openclaw_infra`) set up with `config/inputs.sh` pointing `CONFIG_DIR` to this repo
+- The infra repo (`openclaw-terraform-hetzner`) set up with `config/inputs.sh` pointing `CONFIG_DIR` to this repo
 - API keys (see `docker/.env.example` for the full list; secrets live in the infra repo's `secrets/openclaw.env`)
 
 ## How This Repo Connects to the VPS
@@ -120,8 +120,8 @@ In the infra repo:
 
 Images are built locally and pushed to GHCR via `scripts/build-and-push.sh`:
 
-- `ghcr.io/andreesg/ag-openclaw_config/openclaw-gateway:latest` — default tag, what the VPS pulls
-- `ghcr.io/andreesg/ag-openclaw_config/openclaw-gateway:<sha>` — pinned to a specific commit
+- `ghcr.io/andreesg/openclaw-docker-config/openclaw-gateway:latest` — default tag, what the VPS pulls
+- `ghcr.io/andreesg/openclaw-docker-config/openclaw-gateway:<sha>` — pinned to a specific commit
 
 **One-time GHCR login (laptop):**
 
