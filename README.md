@@ -2,6 +2,8 @@
 
 Docker configuration and application setup for OpenClaw. Companion repository to [openclaw-terraform-hetzner](https://github.com/andreesg/openclaw-terraform-hetzner).
 
+**Note:** This is a minimal, generic configuration with only essential skills activated. You're encouraged to customize it by adding [ClawHub skills](https://hub.claw.run/) or creating your own custom skills (see [Working with Skills](#working-with-skills)).
+
 ```
 ┌──────────────┐                        ┌──────────────────────┐
 │   Laptop     │──── git push ─────────▶│   GitHub             │
@@ -89,12 +91,98 @@ edit → commit → push → build-and-push.sh → make deploy (infra repo)
 3. Build and push image: `bash scripts/build-and-push.sh`
 4. From the **infra repo**: `make deploy` (pulls new image from GHCR and restarts)
 
-## Adding a Custom Skill
+## Working with Skills
 
-1. Create your skill file in the `skills/` directory
-2. Reference it in `config/openclaw.json` under the appropriate section
-3. Push to VPS: `make push-config` from the infra repo
-4. If the skill requires a new binary, also update `docker/Dockerfile`, run `scripts/build-and-push.sh`, then `make deploy`
+This repository includes a minimal set of generic skills in `config/skills-manifest.txt`. You can extend OpenClaw by adding ClawHub skills or creating custom skills.
+
+### ClawHub Skills
+
+[ClawHub](https://hub.claw.run/) is the community skill registry for OpenClaw. To add a ClawHub skill:
+
+1. **Find the skill** at [hub.claw.run](https://hub.claw.run/) (e.g., `pdf`, `ms-office-suite`, `jira`)
+2. **Add to manifest**: Edit `config/skills-manifest.txt` and add the skill name
+   ```
+   # PDF processing
+   pdf
+   ```
+3. **Rebuild and deploy**:
+   ```bash
+   bash scripts/build-and-push.sh
+   # Then from infra repo:
+   make deploy
+   ```
+
+The `entrypoint.sh` script auto-installs skills from the manifest on container startup via `clawhub install`.
+
+### Custom Skills
+
+Custom skills are user-defined commands or workflows. To create one:
+
+1. **Create the skill directory**:
+   ```bash
+   mkdir -p skills/my-skill
+   ```
+
+2. **Write the skill manifest** (`skills/my-skill/skill.json`):
+   ```json
+   {
+     "name": "my-skill",
+     "version": "1.0.0",
+     "description": "My custom skill",
+     "commands": {
+       "my-command": {
+         "handler": "my-command.sh"
+       }
+     }
+   }
+   ```
+
+3. **Write the handler** (`skills/my-skill/my-command.sh`):
+   ```bash
+   #!/bin/bash
+   # Your custom logic here
+   echo "Hello from my-skill!"
+   ```
+
+4. **Make it executable**:
+   ```bash
+   chmod +x skills/my-skill/my-command.sh
+   ```
+
+5. **Push to VPS**:
+   ```bash
+   # From the infra repo:
+   make push-config
+   ```
+
+   Custom skills in `skills/` are copied to `~/.openclaw/workspace/skills/` on the VPS.
+
+6. **Use in OpenClaw**:
+   - Via chat: "Run my-command"
+   - Via Telegram: `/my-command`
+
+### Skill Structure Reference
+
+OpenClaw skills can include:
+- **Slash commands** — callable via `/command-name`
+- **Hooks** — triggered on events (e.g., before tool execution)
+- **Templates** — prompt templates for common workflows
+- **Tools** — custom tool definitions
+
+For detailed skill development documentation, see the [OpenClaw Skill Development Guide](https://docs.openclaw.ai/skills).
+
+### Included Skills
+
+The default configuration includes these generic ClawHub skills:
+
+| Skill | Description | Use Case |
+|-------|-------------|----------|
+| `yt` | YouTube transcript fetching and video search | "Get transcript for youtube.com/watch?v=..." |
+| `agent-browser` | Headless browser for JavaScript-heavy/paywalled pages | Access dynamic content |
+| `system-monitor` | CPU/RAM/GPU status check | "What's my server's CPU usage?" |
+| `conventional-commits` | Format commit messages per convention | Standardized commit messages |
+
+These are intentionally minimal — add your own skills based on your workflows.
 
 ## Accessing the Dashboard
 
