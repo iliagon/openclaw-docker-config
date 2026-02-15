@@ -2,7 +2,7 @@
 
 Docker configuration and application setup for OpenClaw. Companion repository to [openclaw-terraform-hetzner](https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner).
 
-**Note:** This is a minimal, generic configuration with only essential skills activated. You're encouraged to customize it by adding [ClawHub skills](https://hub.claw.run/) or creating your own custom skills (see [Working with Skills](#working-with-skills)).
+**Note:** This is a minimal, generic configuration with only essential skills activated. You're encouraged to customize it by adding [ClawHub skills](https://clawhub.ai/) or creating your own custom skills (see [Working with Skills](#working-with-skills)).
 
 ```
 ┌──────────────┐                        ┌──────────────────────┐
@@ -97,9 +97,9 @@ This repository includes a minimal set of generic skills in `config/skills-manif
 
 ### ClawHub Skills
 
-[ClawHub](https://hub.claw.run/) is the community skill registry for OpenClaw. To add a ClawHub skill:
+[ClawHub](https://clawhub.ai/) is the community skill registry for OpenClaw. To add a ClawHub skill:
 
-1. **Find the skill** at [hub.claw.run](https://hub.claw.run/) (e.g., `pdf`, `ms-office-suite`, `jira`)
+1. **Find the skill** at [clawhub.ai](https://clawhub.ai/) (e.g., `pdf`, `ms-office-suite`, `jira`)
 2. **Add to manifest**: Edit `config/skills-manifest.txt` and add the skill name
    ```
    # PDF processing
