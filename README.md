@@ -184,6 +184,40 @@ The default configuration includes these generic ClawHub skills:
 
 These are intentionally minimal — add your own skills based on your workflows.
 
+## Workspace Git Sync (Optional)
+
+Back up your `~/.openclaw/workspace` directory to a private GitHub repo automatically. Runs as a Docker sidecar container with built-in cron, pushing to a configurable branch (default: `auto`). You can then manually merge `auto` into `main` via PR whenever you want.
+
+### Setup
+
+1. **Create a private GitHub repo** (e.g. `your-username/openclaw-workspace`)
+2. **Create a GitHub PAT** at [github.com/settings/tokens](https://github.com/settings/tokens) with `repo` scope
+3. **Add to your `.env`** (or infra repo's `secrets/openclaw.env`):
+   ```
+   GIT_WORKSPACE_REPO=your-username/openclaw-workspace
+   GIT_WORKSPACE_BRANCH=auto
+   GIT_WORKSPACE_TOKEN=ghp_your_personal_access_token
+   GIT_WORKSPACE_SYNC_SCHEDULE=0 4 * * *
+   ```
+4. **Deploy** — the sidecar auto-enables when `GIT_WORKSPACE_REPO` is set:
+   ```bash
+   # From infra repo:
+   make push-env && make deploy
+   ```
+
+The sidecar runs an initial sync on startup, then syncs on the configured cron schedule (default: daily at 4 AM UTC).
+
+### Manual Sync
+
+```bash
+# From infra repo:
+make workspace-sync
+```
+
+### Disable
+
+Remove or clear `GIT_WORKSPACE_REPO` from your `.env` and redeploy.
+
 ## Accessing the Dashboard
 
 The gateway binds to loopback only (`127.0.0.1:18789`). Access it via SSH tunnel:
@@ -208,8 +242,9 @@ In the infra repo:
 
 Images are built locally and pushed to GHCR via `scripts/build-and-push.sh`:
 
-- `ghcr.io/YOUR_USERNAME/openclaw-docker-config/openclaw-gateway:latest` — default tag, what the VPS pulls
-- `ghcr.io/YOUR_USERNAME/openclaw-docker-config/openclaw-gateway:<sha>` — pinned to a specific commit
+- `ghcr.io/YOUR_USERNAME/openclaw-docker-config/openclaw-gateway:latest` — main gateway image
+- `ghcr.io/YOUR_USERNAME/openclaw-docker-config/workspace-sync:latest` — workspace git sync sidecar
+- Both images also get a `:<sha>` tag pinned to the git commit
 
 **One-time GHCR login (laptop):**
 
