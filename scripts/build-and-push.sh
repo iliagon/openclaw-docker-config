@@ -23,26 +23,28 @@ echo ""
 # --- Gateway image ---
 GW_IMAGE="$GHCR_PREFIX/openclaw-gateway"
 echo "==> Building gateway image ..."
-echo "    Image: $GW_IMAGE"
-echo "    Tags:  $TAG, $SHA"
+echo "    Image:    $GW_IMAGE"
+echo "    Tags:     $TAG, $SHA"
+echo "    Platform: linux/amd64, linux/arm64"
 echo ""
 
-docker buildx build --platform linux/amd64 -f "$REPO_ROOT/docker/Dockerfile" -t "$GW_IMAGE:$TAG" -t "$GW_IMAGE:$SHA" --push "$REPO_ROOT"
+docker buildx build --platform linux/amd64,linux/arm64 -f "$REPO_ROOT/docker/Dockerfile" -t "$GW_IMAGE:$TAG" -t "$GW_IMAGE:$SHA" --push "$REPO_ROOT"
 
 echo ""
-echo "✓ Built and pushed $GW_IMAGE:$TAG (linux/amd64)"
-echo "✓ Built and pushed $GW_IMAGE:$SHA (linux/amd64)"
+echo "✓ Built and pushed $GW_IMAGE:$TAG (linux/amd64, linux/arm64)"
+echo "✓ Built and pushed $GW_IMAGE:$SHA (linux/amd64, linux/arm64)"
 
 # --- Workspace-sync image ---
 WS_IMAGE="$GHCR_PREFIX/workspace-sync"
 echo ""
 echo "==> Building workspace-sync image ..."
-echo "    Image: $WS_IMAGE"
-echo "    Tags:  $TAG, $SHA"
+echo "    Image:    $WS_IMAGE"
+echo "    Tags:     $TAG, $SHA"
+echo "    Platform: linux/amd64, linux/arm64"
 echo ""
 
-docker buildx build --platform linux/amd64 -f "$REPO_ROOT/docker/workspace-sync/Dockerfile" -t "$WS_IMAGE:$TAG" -t "$WS_IMAGE:$SHA" --push "$REPO_ROOT/docker/workspace-sync"
+docker buildx build --platform linux/amd64,linux/arm64 -f "$REPO_ROOT/docker/workspace-sync/Dockerfile" -t "$WS_IMAGE:$TAG" -t "$WS_IMAGE:$SHA" --push "$REPO_ROOT/docker/workspace-sync"
 
 echo ""
-echo "✓ Built and pushed $WS_IMAGE:$TAG (linux/amd64)"
-echo "✓ Built and pushed $WS_IMAGE:$SHA (linux/amd64)"
+echo "✓ Built and pushed $WS_IMAGE:$TAG (linux/amd64, linux/arm64)"
+echo "✓ Built and pushed $WS_IMAGE:$SHA (linux/amd64, linux/arm64)"
