@@ -21,7 +21,7 @@ services:
       - openclaw_state:/home/node/.openclaw
     ports:
       - "${OPENCLAW_GATEWAY_BIND:-0.0.0.0}:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
-    command: openclaw gateway --bind lan --port 18789
+    command: openclaw gateway --port 18789
 
   workspace-sync:
     image: ghcr.io/${GHCR_USERNAME}/openclaw-docker-config/workspace-sync:latest
