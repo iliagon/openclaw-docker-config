@@ -4,6 +4,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="$REPO_ROOT/config/openclaw.json"
 
+# openclaw.json now lives in the workspace repo — skip validation if absent
+if [[ ! -f "$CONFIG" ]]; then
+  echo "✓ Config validation skipped (openclaw.json lives in the workspace repo)"
+  exit 0
+fi
+
 echo "Validating $CONFIG ..."
 
 # 1. Check valid JSON
