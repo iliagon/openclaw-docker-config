@@ -29,7 +29,7 @@ fi
 ###############################################################################
 # Run skill dependency installer (if present)
 ###############################################################################
-INSTALL_SCRIPT="$OPENCLAW_DIR/skill_install.sh"
+INSTALL_SCRIPT="$OPENCLAW_DIR/workspace/scripts/skill_install.sh"
 if [[ -f "$INSTALL_SCRIPT" ]]; then
   echo "[entrypoint] Running skill_install.sh ..."
   bash "$INSTALL_SCRIPT"
