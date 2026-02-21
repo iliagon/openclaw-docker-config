@@ -26,6 +26,7 @@ services:
   workspace-sync:
     image: ghcr.io/${GHCR_USERNAME}/openclaw-docker-config/workspace-sync:latest
     restart: unless-stopped
+    user: "1000:1000"
     environment:
       GHCR_TOKEN: ${GHCR_TOKEN:-}
       GIT_WORKSPACE_REPO: ${GIT_WORKSPACE_REPO:-}
