@@ -13,9 +13,10 @@ if [[ -n "${GIT_WORKSPACE_REPO:-}" && -n "${GHCR_TOKEN:-}" ]]; then
   git config --global --add safe.directory "$OPENCLAW_DIR" 2>/dev/null || true
 
   if [[ -d "$OPENCLAW_DIR/.git" ]]; then
-    echo "[entrypoint] Pulling openclaw state from GitHub ..."
-    git -C "$OPENCLAW_DIR" pull origin "$BRANCH" --rebase --quiet 2>/dev/null || \
-      echo "[entrypoint] WARNING: git pull failed — using existing state"
+    echo "[entrypoint] Syncing openclaw state from GitHub ..."
+    git -C "$OPENCLAW_DIR" fetch origin 2>/dev/null || true
+    git -C "$OPENCLAW_DIR" reset --hard "origin/$BRANCH" 2>/dev/null || \
+      echo "[entrypoint] WARNING: git sync failed — using existing state"
   else
     echo "[entrypoint] Cloning openclaw state from GitHub ..."
     git clone --branch "$BRANCH" --single-branch --quiet "$REMOTE_URL" "$OPENCLAW_DIR" 2>/dev/null || \
