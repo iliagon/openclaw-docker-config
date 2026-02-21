@@ -14,22 +14,27 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       BRAVE_API_KEY: ${BRAVE_API_KEY}
       GH_TOKEN: ${GH_TOKEN:-}
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
+      GIT_WORKSPACE_REPO: ${GIT_WORKSPACE_REPO:-}
+      GIT_WORKSPACE_BRANCH: ${GIT_WORKSPACE_BRANCH:-auto}
     volumes:
-      - ${OPENCLAW_CONFIG_DIR:-/home/openclaw/.openclaw}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR:-/home/openclaw/.openclaw/workspace}:/home/node/.openclaw/workspace
+      - openclaw_state:/home/node/.openclaw
     ports:
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+      - "${OPENCLAW_GATEWAY_BIND:-0.0.0.0}:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
     command: openclaw gateway --bind lan --port 18789
 
   workspace-sync:
     image: ghcr.io/${GHCR_USERNAME}/openclaw-docker-config/workspace-sync:latest
     restart: unless-stopped
     environment:
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
       GIT_WORKSPACE_REPO: ${GIT_WORKSPACE_REPO:-}
       GIT_WORKSPACE_BRANCH: ${GIT_WORKSPACE_BRANCH:-auto}
-      GIT_WORKSPACE_TOKEN: ${GIT_WORKSPACE_TOKEN:-}
       GIT_WORKSPACE_SYNC_SCHEDULE: ${GIT_WORKSPACE_SYNC_SCHEDULE:-0 4 * * *}
     volumes:
-      - ${OPENCLAW_WORKSPACE_DIR:-/home/openclaw/.openclaw/workspace}:/workspace
+      - openclaw_state:/openclaw
     profiles:
       - sync
+
+volumes:
+  openclaw_state:

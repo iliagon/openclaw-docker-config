@@ -1,18 +1,18 @@
 #!/bin/bash
 # =============================================================================
-# OpenClaw Workspace Git Sync
+# OpenClaw State Git Sync
 # =============================================================================
-# Commits and pushes the workspace to a private GitHub repo.
+# Commits and pushes ~/.openclaw (minus credentials/) to a private GitHub repo.
 # Reads config from environment variables (passed by Docker).
 # =============================================================================
 
 set -euo pipefail
 
-WORKSPACE_DIR="/workspace"
+WORKSPACE_DIR="/openclaw"
 
 GIT_WORKSPACE_REPO="${GIT_WORKSPACE_REPO:-}"
 GIT_WORKSPACE_BRANCH="${GIT_WORKSPACE_BRANCH:-auto}"
-GIT_WORKSPACE_TOKEN="${GIT_WORKSPACE_TOKEN:-}"
+GHCR_TOKEN="${GHCR_TOKEN:-}"
 
 # -----------------------------------------------------------------------------
 # Validate
@@ -23,8 +23,8 @@ if [[ -z "$GIT_WORKSPACE_REPO" ]]; then
     exit 0
 fi
 
-if [[ -z "$GIT_WORKSPACE_TOKEN" ]]; then
-    echo "[ERROR] GIT_WORKSPACE_TOKEN not set"
+if [[ -z "$GHCR_TOKEN" ]]; then
+    echo "[ERROR] GHCR_TOKEN not set"
     exit 1
 fi
 
@@ -37,9 +37,9 @@ fi
 # Git setup
 # -----------------------------------------------------------------------------
 
-REMOTE_URL="https://${GIT_WORKSPACE_TOKEN}@github.com/${GIT_WORKSPACE_REPO}.git"
+REMOTE_URL="https://${GHCR_TOKEN}@github.com/${GIT_WORKSPACE_REPO}.git"
 
-echo "=== OpenClaw Workspace Sync ==="
+echo "=== OpenClaw State Sync ==="
 echo "Repo: $GIT_WORKSPACE_REPO"
 echo "Branch: $GIT_WORKSPACE_BRANCH"
 echo ""
@@ -83,7 +83,7 @@ TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 FILE_COUNT=$(git diff --cached --numstat | wc -l | tr -d ' ')
 
 echo "[...] Committing $FILE_COUNT changed file(s)..."
-git commit -m "workspace sync $TIMESTAMP" --quiet
+git commit -m "openclaw sync $TIMESTAMP" --quiet
 
 echo "[...] Pushing to $GIT_WORKSPACE_REPO ($GIT_WORKSPACE_BRANCH)..."
 
@@ -92,5 +92,5 @@ if git ls-remote --exit-code origin "$GIT_WORKSPACE_BRANCH" &>/dev/null; then
 fi
 
 git push -u origin "$GIT_WORKSPACE_BRANCH" --quiet 2>&1
-echo "[OK] Workspace synced successfully"
+echo "[OK] State synced successfully"
 echo "=== Sync Complete ==="

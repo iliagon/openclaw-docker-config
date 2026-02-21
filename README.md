@@ -2,7 +2,7 @@
 
 Docker configuration and application setup for OpenClaw. Companion repository to [openclaw-terraform-hetzner](https://github.com/andreesg/openclaw-terraform-hetzner).
 
-**Note:** This is a minimal, generic configuration with only essential skills activated. You're encouraged to customize it by adding [ClawHub skills](https://clawhub.ai/) or creating your own custom skills (see [Working with Skills](#working-with-skills)).
+**Note:** This is a minimal, generic configuration. Skills live in your workspace repo and are managed through the agent at runtime — see [Working with Skills](#working-with-skills).
 
 ```
 ┌──────────────┐                        ┌──────────────────────┐
@@ -15,10 +15,10 @@ Docker configuration and application setup for OpenClaw. Companion repository to
 │              │                        │   :latest  :abc1234  │
 │              │                        └──────────────────────┘
 │              │
-│              │  make push-config       ┌──────────────────────┐
-│              │  make push-env          │   Hetzner VPS        │
+│              │  make push-env          ┌──────────────────────┐
+│              │  make deploy            │   Hetzner VPS        │
 │              │──── (infra repo) ──────▶│   ┌────────────────┐ │
-│              │  make deploy            │   │ Docker         │ │
+│              │                        │   │ Docker         │ │
 └──────────────┘                        │   │ openclaw-gw    │ │
                                         │   └────────────────┘ │
                                         │   :18789 (loopback)  │
@@ -40,9 +40,10 @@ specific files from your local checkout to the VPS:
 | What | Pushed by | Lands at (VPS) |
 |------|-----------|----------------|
 | `docker/docker-compose.yml` | `make bootstrap` (once) | `~/openclaw/docker-compose.yml` |
-| `config/*` (openclaw.json, etc.) | `make push-config` | `~/.openclaw/` |
 | Docker image | `make deploy` (pulls from GHCR) | Docker image cache |
 | Secrets | `make push-env` | `~/openclaw/.env` |
+
+> **Config and state** (`openclaw.json`, skills, agents, etc.) live in the **workspace GitHub repo** and are cloned into the `openclaw_data` Docker volume on every container start. Edit config in the workspace repo and restart the container to apply.
 
 ## First-Time Setup
 
@@ -57,26 +58,21 @@ specific files from your local checkout to the VPS:
    ```bash
    bash scripts/build-and-push.sh
    ```
-4. Run `make bootstrap` from the infra repo — copies `docker-compose.yml`, config, and secrets to VPS
+4. Run `make bootstrap` from the infra repo — copies `docker-compose.yml` and secrets to VPS
 5. Run `make deploy` from the infra repo — pulls the Docker image from GHCR and starts the container
 6. **Complete Telegram pairing:** open Telegram, find your bot, send `/start`
 
-## Config Change Workflow
+## Change Workflows
 
-There are two types of changes, and they have different workflows:
+### Changing config or state (openclaw.json, skills, memory)
 
-### Changing config (openclaw.json, skills, hooks)
-
-Config files are pushed to the VPS via SCP — no image rebuild needed.
+Config and all runtime state live in the **workspace GitHub repo** — no SCP, no image rebuild needed.
 
 ```
-edit → validate → commit → push → make push-config (infra repo)
+edit in workspace repo → commit → push → restart container
 ```
 
-1. Edit files in `config/`, `skills/`, or `hooks/`
-2. Validate: `bash scripts/validate-config.sh`
-3. Commit and push to GitHub
-4. From the **infra repo**: `make push-config` (SCPs config to VPS and restarts)
+On restart, `entrypoint.sh` clones/pulls the workspace repo into the `openclaw_data` volume.
 
 ### Changing the Docker image (Dockerfile, OpenClaw version)
 
@@ -93,130 +89,77 @@ edit → commit → push → build-and-push.sh → make deploy (infra repo)
 
 ## Working with Skills
 
-This repository includes a minimal set of generic skills in `config/skills-manifest.txt`. You can extend OpenClaw by adding ClawHub skills or creating custom skills.
+Skills live in your **workspace repo** under `skills/` and are loaded on every session. The workspace is cloned from GitHub on every container start, so skills survive restarts automatically.
 
-### ClawHub Skills
+### Adding a skill via the agent
 
-[ClawHub](https://clawhub.ai/) is the community skill registry for OpenClaw. To add a ClawHub skill:
+The workspace includes a built-in `install-skill` skill that guides the agent through the full workflow. Just tell the bot:
 
-1. **Find the skill** at [clawhub.ai](https://clawhub.ai/) (e.g., `pdf`, `ms-office-suite`, `jira`)
-2. **Add to manifest**: Edit `config/skills-manifest.txt` and add the skill name
-   ```
-   # PDF processing
-   pdf
-   ```
-3. **Rebuild and deploy**:
-   ```bash
-   bash scripts/build-and-push.sh
-   # Then from infra repo:
-   make deploy
-   ```
+> "add skill `<skill-name>`"
 
-The `entrypoint.sh` script auto-installs skills from the manifest on container startup via `clawhub install`.
+The agent will:
+1. Read the skill's `SKILL.md` and identify required binaries
+2. Install dependencies in the running container
+3. Record the install commands in `skill_install.sh` (run on every container start for reproducibility)
+4. Commit and push to your workspace repo via workspace-sync
 
-### Custom Skills
+Browse available skills at [clawhub.ai](https://clawhub.ai/).
 
-Custom skills are user-defined commands or workflows. To create one:
+### Writing a custom skill
 
-1. **Create the skill directory**:
-   ```bash
-   mkdir -p skills/my-skill
-   ```
+Create a skill folder in your workspace repo under `skills/`:
 
-2. **Write the skill manifest** (`skills/my-skill/skill.json`):
-   ```json
-   {
-     "name": "my-skill",
-     "version": "1.0.0",
-     "description": "My custom skill",
-     "commands": {
-       "my-command": {
-         "handler": "my-command.sh"
-       }
-     }
-   }
-   ```
+```
+skills/my-skill/
+└── SKILL.md
+```
 
-3. **Write the handler** (`skills/my-skill/my-command.sh`):
-   ```bash
-   #!/bin/bash
-   # Your custom logic here
-   echo "Hello from my-skill!"
-   ```
+Minimal `SKILL.md`:
 
-4. **Make it executable**:
-   ```bash
-   chmod +x skills/my-skill/my-command.sh
-   ```
+```markdown
+---
+name: my-skill
+description: What this skill does and when to use it.
+---
 
-5. **Push to VPS**:
-   ```bash
-   # From the infra repo:
-   make push-config
-   ```
+# My Skill
 
-   Custom skills in `skills/` are copied to `~/.openclaw/workspace/skills/` on the VPS.
+Instructions for the agent...
+```
 
-6. **Use in OpenClaw**:
-   - Via chat: "Run my-command"
-   - Via Telegram: `/my-command`
+See the [OpenClaw Skills docs](https://docs.openclaw.ai/tools/skills) for the full format (metadata gates, slash commands, binary requirements).
 
-### Skill Structure Reference
+### Skill binary dependencies
 
-OpenClaw skills can include:
-- **Slash commands** — callable via `/command-name`
-- **Hooks** — triggered on events (e.g., before tool execution)
-- **Templates** — prompt templates for common workflows
-- **Tools** — custom tool definitions
+Binary deps are tracked in `<workspace>/skill_install.sh`, which runs automatically on every container start. When the agent adds a skill it appends an idempotent install section to this file. The initial template lives in `workspace-templates/skill_install.sh`.
 
-For detailed skill development documentation, see the [OpenClaw Skill Development Guide](https://docs.openclaw.ai/skills).
+## Workspace Git Sync
 
-### Included Skills
+The workspace (`~/.openclaw/workspace`) is stored in a Docker-managed volume and **cloned from your workspace GitHub repo on every container start**. Without this configured, any skills or customizations added at runtime are lost when the container restarts.
 
-The default configuration includes these generic ClawHub skills:
-
-| Skill | Description | Use Case |
-|-------|-------------|----------|
-| `yt` | YouTube transcript fetching and video search | "Get transcript for youtube.com/watch?v=..." |
-| `agent-browser` | Headless browser for JavaScript-heavy/paywalled pages | Access dynamic content |
-| `system-monitor` | CPU/RAM/GPU status check | "What's my server's CPU usage?" |
-| `conventional-commits` | Format commit messages per convention | Standardized commit messages |
-
-These are intentionally minimal — add your own skills based on your workflows.
-
-## Workspace Git Sync (Optional)
-
-Back up your `~/.openclaw/workspace` directory to a private GitHub repo automatically. Runs as a Docker sidecar container with built-in cron, pushing to a configurable branch (default: `auto`). You can then manually merge `auto` into `main` via PR whenever you want.
+The `workspace-sync` sidecar pushes changes back to GitHub on a cron schedule.
 
 ### Setup
 
 1. **Create a private GitHub repo** (e.g. `your-username/openclaw-workspace`)
-2. **Create a GitHub PAT** at [github.com/settings/tokens](https://github.com/settings/tokens) with `repo` scope
+2. Ensure `GHCR_TOKEN` (already in `.env`) has `repo` scope — it's reused for workspace git auth
 3. **Add to your `.env`** (or infra repo's `secrets/openclaw.env`):
    ```
    GIT_WORKSPACE_REPO=your-username/openclaw-workspace
    GIT_WORKSPACE_BRANCH=auto
-   GIT_WORKSPACE_TOKEN=ghp_your_personal_access_token
    GIT_WORKSPACE_SYNC_SCHEDULE=0 4 * * *
    ```
-4. **Deploy** — the sidecar auto-enables when `GIT_WORKSPACE_REPO` is set:
+4. **Deploy** with the `sync` profile to enable the sidecar:
    ```bash
    # From infra repo:
    make push-env && make deploy
    ```
 
-The sidecar runs an initial sync on startup, then syncs on the configured cron schedule (default: daily at 4 AM UTC).
-
-### Manual Sync
-
-```bash
-# From infra repo:
-make workspace-sync
-```
+On start: gateway clones the workspace repo. Sidecar pushes changes on the configured schedule (default: daily at 4 AM UTC).
 
 ### Disable
 
-Remove or clear `GIT_WORKSPACE_REPO` from your `.env` and redeploy.
+Remove or clear `GIT_WORKSPACE_REPO` from your `.env` and redeploy. The workspace will still exist for the container's lifetime but won't persist across restarts.
 
 ## Accessing the Dashboard
 
@@ -276,13 +219,13 @@ cd ~/openclaw && docker compose logs openclaw-gateway
 
 Check for missing environment variables or invalid config JSON.
 
-### "Permission denied" on config directory
+### "Permission denied" errors
 
-Ensure the host directories exist and are owned by the correct user:
+State is stored in a Docker-managed volume (`openclaw_data`) so there are no host directory ownership issues. If you see permission errors inside the container, recreate the volume:
 
 ```bash
-sudo mkdir -p /home/openclaw/.openclaw/workspace
-sudo chown -R 1000:1000 /home/openclaw/.openclaw
+docker compose down -v
+docker compose up -d
 ```
 
 ### Telegram bot not responding
